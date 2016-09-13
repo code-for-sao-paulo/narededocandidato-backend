@@ -5,47 +5,38 @@ const VALIDATION_ERROR_MSG = 'ValidationError';
 const PARSE_ERROR_MSG = 'Found error when parsing parameters: ';
 const PIPELINE_ERROR_MSG = 'Pipeline required !';
 
-export default class CrudHandler {
-  constructor(options) {
-    this.Model = options.model;
-    this.options = options;
-  }
+function jsonParse(value) {
+  return _.isUndefined(value) ? null : JSON.parse(value);
+}
 
-  jsonParse(value) {
-    return _.isUndefined(value) ? null : JSON.parse(value);
-  }
+export default function assignCrudController(controller, model, options) {
 
-  handleSingleQueryParametersErrors(req, res) {
+  controller.handleSingleQueryParametersErrors = function (req, res) {
     try {
-      req.query.filter = this.jsonParse(req.query.filter);
-      req.query.sort = this.jsonParse(req.query.sort);
-      req.query.populate = this.jsonParse(req.query.populate);
+      req.query.filter = jsonParse(req.query.filter);
+      req.query.sort = jsonParse(req.query.sort);
+      req.query.populate = jsonParse(req.query.populate);
     } catch (err) {
       logger.warning('Error parsing query parameters. Sending bad request. Error: ' + err);
       return new ResponseHandler(res).badRequest(PARSE_ERROR_MSG + req.query);
     }
 
     return true;
-  }
+  };
 
-  handleAggregateQueryParametersErrors(req, res) {
+  controller.handleAggregateQueryParametersErrors = function (req, res) {
     try {
-      req.query.pipeline = this.jsonParse(req.query.pipeline);
+      req.query.pipeline = jsonParse(req.query.pipeline);
     } catch (err) {
       logger.warning('Error parsing aggregate query parameters. ' +
         'Sending bad request. Error: ' + err);
       return new ResponseHandler(res).badRequest(PARSE_ERROR_MSG + req.query);
     }
     return true;
-  }
-}
+  };
 
-
-(function () {
-  'use strict';
-
-  CrudHandler.prototype.getIndexQuery = function (req) {
-    var query = this.Model.find(req.query.filter || null);
+  controller.getIndexQuery = function (req) {
+    var query = model.find(req.query.filter || null);
     var limit = parseInt(req.query.limit, 10);
     var skip = parseInt(req.query.skip, 10);
 
@@ -68,14 +59,14 @@ export default class CrudHandler {
     return query;
   };
 
-  CrudHandler.prototype.index = function (req, res) {
+  controller.index = function (req, res) {
     var query;
 
-    if (!this.handleSingleQueryParametersErrors(req, res)) {
+    if (!controller.handleSingleQueryParametersErrors(req, res)) {
       return;
     }
 
-    query = this.getIndexQuery(req, res);
+    query = controller.getIndexQuery(req, res);
 
     logger.debug('Executing query: ' + query);
 
@@ -89,14 +80,14 @@ export default class CrudHandler {
     });
   };
 
-  CrudHandler.prototype.count = function (req, res) {
+  controller.count = function (req, res) {
     var query;
 
-    if (!this.handleSingleQueryParametersErrors(req, res)) {
+    if (!controller.handleSingleQueryParametersErrors(req, res)) {
       return;
     }
 
-    query = this.getIndexQuery(req, res);
+    query = controller.getIndexQuery(req, res);
 
     logger.debug('counting query: ' + query);
 
@@ -110,11 +101,11 @@ export default class CrudHandler {
     });
   };
 
-  CrudHandler.prototype.aggregate = function (req, res) {
+  controller.aggregate = function (req, res) {
     var pipeline;
     var query;
 
-    if (!this.handleAggregateQueryParametersErrors(req, res)) {
+    if (!controller.handleAggregateQueryParametersErrors(req, res)) {
       return;
     }
 
@@ -128,7 +119,7 @@ export default class CrudHandler {
       return new ResponseHandler(res).badRequest(PIPELINE_ERROR_MSG);
     }
 
-    query = this.Model.aggregate(pipeline);
+    query = model.aggregate(pipeline);
 
     logger.debug('aggregation query: ' + query);
 
@@ -142,14 +133,14 @@ export default class CrudHandler {
     });
   };
 
-  CrudHandler.prototype.show = function (req, res) {
+  controller.show = function (req, res) {
     var query;
 
-    if (!this.handleSingleQueryParametersErrors(req, res)) {
+    if (!controller.handleSingleQueryParametersErrors(req, res)) {
       return;
     }
 
-    query = this.Model.findById(req.params.id);
+    query = model.findById(req.params.id);
 
     if (req.query.populate) {
       query = query.populate(req.query.populate);
@@ -171,9 +162,9 @@ export default class CrudHandler {
     });
   };
 
-  CrudHandler.prototype.create = function (req, res) {
-    var params = helpers.permit(req.body, this.options.whitelist);
-    var entity = new this.Model(params);
+  controller.create = function (req, res) {
+    var params = helpers.permit(req.body, options.whitelist);
+    var entity = new model(params);
 
     logger.debug('creating model: ' + entity);
 
@@ -191,13 +182,13 @@ export default class CrudHandler {
     });
   };
 
-  CrudHandler.prototype.update = function (req, res) {
+  controller.update = function (req, res) {
     var id = req.params.id;
-    var params = helpers.permit(req.body, this.options.whitelist);
+    var params = helpers.permit(req.body, options.whitelist);
 
     logger.debug('updating model id: ' + id);
 
-    this.Model.findById(id).exec(function (findError, entity) {
+    model.findById(id).exec(function (findError, entity) {
       if (findError) {
         logger.error('Error searching model for update... Error: ' + findError);
         return new ResponseHandler(res).internalError(findError);
@@ -224,12 +215,12 @@ export default class CrudHandler {
     });
   };
 
-  CrudHandler.prototype.destroy = function (req, res) {
+  controller.destroy = function (req, res) {
     var id = req.params.id;
 
     logger.debug('deleting model id: ' + id);
 
-    this.Model.findById(id).exec(function (findError, entity) {
+    model.findById(id).exec(function (findError, entity) {
       if (findError) {
         logger.error('Error searching model for delete... Error: ' + findError);
         return new ResponseHandler(res).internalError(findError);
@@ -249,6 +240,4 @@ export default class CrudHandler {
       });
     });
   };
-
-  module.exports = CrudHandler;
-}());
+}
