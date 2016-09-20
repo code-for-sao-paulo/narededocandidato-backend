@@ -1,10 +1,13 @@
-import Settings from '../settings';
-import Logger from '../../components/Logger';
 import express from 'express';
-import routes from './routes';
 import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import cors from 'cors';
+
+import Settings from '../settings';
+import logger from '../../components/logger';
+import routes from './api/routes';
+import ressendrHandlers from '../../components/ressendr-handlers';
+import startDatabase from '../database/database';
 
 class WebApp {
   constructor(app) {
@@ -12,6 +15,7 @@ class WebApp {
     this.useCors();
     this.parseBody();
     this.morgan();
+    this.database();
     this.fetchRoutes();
     this.init();
   }
@@ -21,7 +25,7 @@ class WebApp {
   }
 
   morgan() {
-    this.app.use(morgan('tiny', { stream: { write: Logger.info } }));
+    this.app.use(morgan('tiny', { stream: { write: logger.info } }));
   }
 
   useCors() {
@@ -29,7 +33,12 @@ class WebApp {
   }
 
   fetchRoutes() {
+    ressendrHandlers();
     return routes(this.app);
+  }
+
+  database() {
+    startDatabase();
   }
 
   init() {
@@ -37,8 +46,8 @@ class WebApp {
   }
 
   banner() {
-    console.log(`Server UP and Running in port: ${Settings.web.httpPort}`);
+    logger.info(`Server UP and Running in port: ${Settings.web.httpPort}`);
   }
 }
 
-export const app = new WebApp(express());
+export default new WebApp(express());
