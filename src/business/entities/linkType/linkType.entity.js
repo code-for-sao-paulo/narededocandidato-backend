@@ -3,14 +3,14 @@ import Speck from 'speck-entity';
 
 import joiSchemaToPropType from '../../../components/joi-schema-to-prop-type';
 import activeRecord from '../../../components/active-record';
-import ImageRepository from '../../repositories/image.repository';
-import ImageCollection from './image.collection';
+import LinkTypeRepository from '../../repositories/linkType.repository';
+import LinkTypeCollection from './linkType.collection';
 
-export default class Image extends Speck {
+export default class LinkType extends Speck {
 
   static SCHEMA = joiSchemaToPropType({
-    content: joi.binary().required(),
-    mediaType: joi.string().required()
+    name: joi.string().required(),
+    description: joi.string().required()
   });
 
   constructor(data) {
@@ -18,9 +18,9 @@ export default class Image extends Speck {
 
     activeRecord(
       this,
-      new ImageRepository(),
-      Image,
-      ImageCollection
+      new LinkTypeRepository(),
+      LinkType,
+      LinkTypeCollection
     );
   }
 }

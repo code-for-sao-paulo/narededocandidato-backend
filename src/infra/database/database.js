@@ -12,4 +12,6 @@ export default function startDatabase() {
   // add logic to start mongo
 
   started = true;
+
+  return
 }
