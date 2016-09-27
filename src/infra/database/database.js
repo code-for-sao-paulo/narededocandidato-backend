@@ -1,4 +1,5 @@
 import Settings from '../settings';
+import mongoose from 'mongoose';
 
 let started = false;
 
@@ -9,7 +10,7 @@ export default function startDatabase() {
 
   const connectionString = Settings.database.connectionString;
 
-  // add logic to start mongo
+  mongoose.connect(connectionString);
 
   started = true;
 

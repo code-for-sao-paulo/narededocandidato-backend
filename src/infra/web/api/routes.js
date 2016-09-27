@@ -1,7 +1,7 @@
-import imageRoutes from './data/image/image.routes';
+import politicalPartyRoutes from './data/politicalParty/politicalParty.routes';
 
 const modules = [
-  imageRoutes,
+  politicalPartyRoutes,
 ];
 
 export default function (app) {
